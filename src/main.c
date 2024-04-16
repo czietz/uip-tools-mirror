@@ -61,13 +61,20 @@
 #define NULL ((void *)0)
 #endif /* NULL */
 
+#define IP_BUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
+
 #define KEY_CHECK_VALUE (20)
 
 /*---------------------------------------------------------------------------*/
 
 void net_send()
 {
-  uip_split_output();
+  if (IP_BUF->proto == UIP_PROTO_TCP) {
+    /* this will (re) calculate the TCP checksum, not safe for !TCP */
+    uip_split_output();
+  } else {
+    ip_packet_output();
+  }
 }
 
 void ip_packet_output()
