@@ -35,10 +35,11 @@ uglifyjs_present = binaryExists('uglifyjs')
 cmd_string = \
         [
             "cpp -E -P -CC -undef -nostdinc -DVERSION="
-                + str(targetEnv["CPPDEFINES"]["VERSION"])
-                + " -I\"" + Dir(".").path + "\" -o ${TARGET}.cpp $SOURCE"
+                + targetEnv["VERSION"]
+                + " -I\"" + Dir(".").path + "\" $SOURCE"
                 + " -DUSE_LESSC=" + ("1" if lessc_present == True  else "0")
-                + " -DUSE_UGLIFYJS=" + ("1" if uglifyjs_present == True  else "0"),
+                + " -DUSE_UGLIFYJS=" + ("1" if uglifyjs_present == True  else "0")
+                + " > ${TARGET}.cpp",
             "gzip -9 -f ${TARGET}.cpp -c > ${TARGET}.gz",
             "xxd -i ${TARGET}.gz > $TARGET",
             "sed -i -e 's/unsigned/static unsigned/g' $TARGET",
