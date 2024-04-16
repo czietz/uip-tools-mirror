@@ -3,8 +3,8 @@ Import('targetEnv')
 Import('hostEnv')
 
 def BuildImage(source):
-    return hostEnv.Command(source.replace(".png", ".dat"),  source, 
-        ["base64 -w 0 < $SOURCE > $TARGET", "sed -i  \'1s;^;\";\' $TARGET", "echo '\"' >>  $TARGET"])
+    return hostEnv.Command(source.replace(".png", ".dat"),  source,
+        ["printf '\"' > $TARGET", "basenc --base64 -w 0 < $SOURCE >> $TARGET", "echo '\"' >>  $TARGET"])
 
 images = [
     BuildImage("img/dir_close.png"),
