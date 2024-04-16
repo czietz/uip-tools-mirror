@@ -54,13 +54,14 @@
 #include <osbind.h>
 #include <stdio.h>
 #include <string.h>
-
-#define BUF ((struct uip_eth_hdr *)&uip_buf[0])
+#include <unistd.h>     /* for getopt */
+#include <sys/ioctl.h>  /* for serial speed constants */
 
 #ifndef NULL
 #define NULL ((void *)0)
 #endif /* NULL */
 
+#define ETH_BUF ((struct uip_eth_hdr *)&uip_buf[0])
 #define IP_BUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
 
 #define KEY_CHECK_VALUE (20)
@@ -79,7 +80,9 @@ void net_send()
 
 void ip_packet_output()
 {
+#ifndef SLIP_DRIVER
   uip_arp_out();
+#endif
   driver_send();
 }
 
@@ -128,6 +131,8 @@ uip_ipaddr_t config_netmask;
 uip_ipaddr_t config_router;
 bool config_static_ip;
 char config_path[256];
+unsigned int serial_dev;
+unsigned long serial_speed;
 
 void save_config();
 
@@ -169,27 +174,41 @@ config_setup_default()
   config_static_ip = true;
 #else
   config_static_ip = false;
-  uip_ipaddr(&config_ip, 192,168,1,90);
-  uip_ipaddr(&config_netmask, 255,255,255,0);
-  uip_ipaddr(&config_router, 192,168,1,254);
 #endif
+  serial_dev = 0;
+  serial_speed = 0;
+#ifdef SLIP_DRIVER
+  /* avoid commonly-used local network addresses */
+  uip_ipaddr(&config_ip, 192,168,190,2);
+  uip_ipaddr(&config_router, 192,168,190,1);
+#else
+  uip_ipaddr(&config_ip, 192,168,1,2);
+  uip_ipaddr(&config_router, 192,168,1,1);
+#endif
+  uip_ipaddr(&config_netmask, 255,255,255,252);
 }
 
 void
 save_config()
 {
   FILE* fp = fopen (config_path, "w");
-  fprintf(fp,
-    "%d " /* dhcp enabled? */
-    "%d.%d.%d.%d %d.%d.%d.%d %d.%d.%d.%d",
-    config_static_ip ? 1 : 0,
-    uip_ipaddr1(config_ip), uip_ipaddr2(config_ip),
-	  uip_ipaddr3(config_ip), uip_ipaddr4(config_ip),
-    uip_ipaddr1(config_netmask), uip_ipaddr2(config_netmask),
-	  uip_ipaddr3(config_netmask), uip_ipaddr4(config_netmask),
-    uip_ipaddr1(config_router), uip_ipaddr2(config_router),
-	  uip_ipaddr3(config_router), uip_ipaddr4(config_router));
-  fclose(fp);
+  if (fp) {
+    fprintf(fp,
+      "%d " /* dhcp enabled? */
+      "%u %lu " /* serial config */
+      "%u.%u.%u.%u %u.%u.%u.%u %u.%u.%u.%u",
+      config_static_ip ? 1 : 0,
+      serial_dev, serial_speed,
+      uip_ipaddr1(config_ip), uip_ipaddr2(config_ip),
+      uip_ipaddr3(config_ip), uip_ipaddr4(config_ip),
+      uip_ipaddr1(config_netmask), uip_ipaddr2(config_netmask),
+      uip_ipaddr3(config_netmask), uip_ipaddr4(config_netmask),
+      uip_ipaddr1(config_router), uip_ipaddr2(config_router),
+      uip_ipaddr3(config_router), uip_ipaddr4(config_router));
+    fclose(fp);
+  } else {
+    LOG_WARN("could not save configuration\r\n");
+  }
 }
 
 void
@@ -208,7 +227,6 @@ read_config()
   if (size == 0) {
     fclose (fp);
     config_setup_default ();
-    configure_ip ();
     save_config ();
     return;
   }
@@ -224,19 +242,21 @@ read_config()
   fclose (fp);
 
   {
-    int ip[4], mask[4], route[4];
+    unsigned int ip[4], mask[4], route[4];
     int static_ip_enabled = 0;
 
     size_t num_values = sscanf(config_data,
-      "%u " /* dhcp enabled? */
+      "%d " /* dhcp enabled? */
+      "%u %lu " /* serial config */
       "%u.%u.%u.%u %u.%u.%u.%u %u.%u.%u.%u",
       &static_ip_enabled,
+      &serial_dev, &serial_speed,
       &ip[0], &ip[1], &ip[2], &ip[3],
       &mask[0], &mask[1], &mask[2], &mask[3],
       &route[0], &route[1], &route[2], &route[3]);
 
-    if(num_values != 13) {
-      LOG_WARN("Configuration file malformed! %d\r\n", num_values);
+    if(num_values != 15) {
+      LOG_WARN("Configuration file malformed! %lu\r\n", num_values);
       config_setup_default ();
     }
 
@@ -247,12 +267,9 @@ read_config()
     uip_ipaddr(&config_ip, ip[0], ip[1], ip[2], ip[3]);
     uip_ipaddr(&config_netmask, mask[0], mask[1], mask[2], mask[3]);
     uip_ipaddr(&config_router, route[0], route[1], route[2], route[3]);
-
-    configure_ip();
   }
 
   free (config_data);
-
 }
 
 /*---------------------------------------------------------------------------*/
@@ -359,14 +376,36 @@ main(int argc, char *argv[])
   timer_set(&periodic_timer, CLOCK_SECOND/10);
   timer_set(&arp_timer, CLOCK_SECOND * 10);
 
+  read_config();
   INFO("Driver init ... ");
-  if (!driver_init(uip_ethaddr.addr, cpu_type) ) {
+#ifdef SLIP_DRIVER
+  {
+    int ch;
+    while ((ch = getopt(argc, argv, "p:s:")) != -1) {
+      switch(ch) {
+      case 'p':
+        serial_dev = strtol(optarg, NULL, 10);
+        break;
+      case 's':
+        serial_speed = strtol(optarg, NULL, 10);
+        break;
+      default:
+        LOG_WARN("unexpected option '%c', usage: -p <BIOS device number> -s <speed>\r\n", ch);
+        return 1;
+      }
+    }
+  }
+  if (!driver_init(serial_dev, serial_speed) )
+#else
+  if (!driver_init(uip_ethaddr.addr, cpu_type) )
+#endif
+  {
     LOG_WARN("driver initialisation failed!\r\n");
     return 1;
   }
 
   uip_init();
-  read_config();
+  configure_ip();
   httpd_init();
   ftpd_init();
 
@@ -399,19 +438,25 @@ main(int argc, char *argv[])
     uip_len = driver_poll();
 
     if(uip_len > 0) {
-      if(BUF->type == htons(UIP_ETHTYPE_IP)) {
+#ifdef SLIP_DRIVER
+      uip_input();
+      if(uip_len > 0) {
+        net_send();
+      }
+#else /* !SLIP_DRIVER */
+      if(ETH_BUF->type == htons(UIP_ETHTYPE_IP)) {
         uip_arp_ipin();
         uip_input();
         if(uip_len > 0) {
           net_send();
         }
-      } else if(BUF->type == htons(UIP_ETHTYPE_ARP)) {
+      } else if(ETH_BUF->type == htons(UIP_ETHTYPE_ARP)) {
         uip_arp_arpin();
         if(uip_len > 0) {
           driver_send();
         }
       }
-
+#endif /* SLIP_DRIVER */
     } else if(timer_expired(&periodic_timer)) {
       timer_reset(&periodic_timer);
       for(int i = 0; i < UIP_CONNS; i++) {
@@ -438,11 +483,13 @@ main(int argc, char *argv[])
     }
     #endif /* UIP_UDP */
 
+#ifndef SLIP_DRIVER
     /* Call the ARP timer function every 10 seconds. */
     if(timer_expired(&arp_timer)) {
       timer_reset(&arp_timer);
       uip_arp_timer();
     }
+#endif /* SLIP_DRIVER */
   }
 
   driver_deinit();

@@ -8,6 +8,13 @@
 	#define driver_send USBETHdev_send
 	#define driver_deinit USBETHdev_done
 
+#elif defined(SLIP_DRIVER)
+	#include "slip/slip_dev.h"
+	#define driver_init slipdev_init
+	#define driver_poll slipdev_poll
+	#define driver_send slipdev_send
+	#define driver_deinit slipdev_done
+
 #else
 	#include "netusbee/rtl8019.h"
 	#define driver_init RTL8019dev_init

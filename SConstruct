@@ -114,7 +114,8 @@ def buildDriverVariant(hostEnv, targetEnv, varian_name):
     return target
 
 # Netusbee binary
-targetNetusbee = buildDriverVariant(hostEnv, targetEnv, "netusbee")
+netusbeeTargetEnv = targetEnv.Clone()
+targetNetusbee = buildDriverVariant(hostEnv, netusbeeTargetEnv, "netusbee")
 
 # USB ASIX binary
 usbTartegEnv = targetEnv.Clone()
@@ -122,10 +123,16 @@ usbTartegEnv.Append(CPPDEFINES={'USB_DRIVER':1})
 usbTartegEnv.Append(CPPDEFINES={'USB_PRINTSTATUS':1})
 targetUSB = buildDriverVariant(hostEnv, usbTartegEnv, "usb")
 
+# SLIP binary
+slipTartegEnv = targetEnv.Clone()
+slipTartegEnv.Append(CPPDEFINES={'SLIP_DRIVER':1})
+slipTartegEnv.Append(CPPDEFINES={'WITHOUT_DHCP':1})
+targetSLIP = buildDriverVariant(hostEnv, slipTartegEnv, "slip")
+
 num_cpu = int(os.environ.get('NUMBER_OF_PROCESSORS', 2))
 SetOption('num_jobs', num_cpu)
 print("running with %d jobs." % GetOption('num_jobs')) 
 
-targets = [targetNetusbee, targetUSB]
+targets = [targetNetusbee, targetUSB, targetSLIP]
 
 Default(targets)
