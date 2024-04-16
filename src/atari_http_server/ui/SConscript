@@ -3,8 +3,12 @@ Import('targetEnv')
 Import('hostEnv')
 
 def BuildImage(source):
-    return hostEnv.Command(source.replace(".png", ".dat"),  source, 
-        ["base64 -w 0 < $SOURCE > $TARGET", "sed -i  \'1s;^;\";\' $TARGET", "echo '\"' >>  $TARGET"])
+    if hostEnv['PLATFORM'] == 'darwin':
+        wrapopt = '-b 0'
+    else:
+        wrapopt = '-w 0'
+    return hostEnv.Command(source.replace(".png", ".dat"),  source,
+        ["printf '\"' > $TARGET", "base64 " + wrapopt + " < $SOURCE >> $TARGET", "echo '\"' >>  $TARGET"])
 
 images = [
     BuildImage("img/dir_close.png"),
