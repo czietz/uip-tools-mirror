@@ -3,8 +3,8 @@ Import('targetEnv')
 Import('hostEnv')
 
 def BuildImage(source):
-    return hostEnv.Command(source.replace(".png", ".dat"),  source,
-        ["printf '\"' > $TARGET", "basenc --base64 -w 0 < $SOURCE >> $TARGET", "echo '\"' >>  $TARGET"])
+    return hostEnv.Command(source.replace(".png", ".dat"),  source, 
+        ["base64 -w 0 < $SOURCE > $TARGET", "sed -i  \'1s;^;\";\' $TARGET", "echo '\"' >>  $TARGET"])
 
 images = [
     BuildImage("img/dir_close.png"),
@@ -35,11 +35,10 @@ uglifyjs_present = binaryExists('uglifyjs')
 cmd_string = \
         [
             "cpp -E -P -CC -undef -nostdinc -DVERSION="
-                + targetEnv["VERSION"]
-                + " -I\"" + Dir(".").path + "\" $SOURCE"
+                + str(targetEnv["CPPDEFINES"]["VERSION"])
+                + " -I\"" + Dir(".").path + "\" -o ${TARGET}.cpp $SOURCE"
                 + " -DUSE_LESSC=" + ("1" if lessc_present == True  else "0")
-                + " -DUSE_UGLIFYJS=" + ("1" if uglifyjs_present == True  else "0")
-                + " > ${TARGET}.cpp",
+                + " -DUSE_UGLIFYJS=" + ("1" if uglifyjs_present == True  else "0"),
             "gzip -9 -f ${TARGET}.cpp -c > ${TARGET}.gz",
             "xxd -i ${TARGET}.gz > $TARGET",
             "sed -i -e 's/unsigned/static unsigned/g' $TARGET",

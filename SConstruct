@@ -93,7 +93,6 @@ targetEnv = setupToolchain(hostEnv.Clone())
 # Optionally use libcmini
 detectLibCMini(targetEnv)
 
-targetEnv['VERSION'] = getVersion(hostEnv)
 targetEnv.Append(CPPDEFINES={'VERSION' : getVersion(hostEnv)})
 targetEnv.Append(CPPDEFINES={'DEBUG' : 0})
 targetEnv.Append(CPPDEFINES={'DUIP_CONF_BYTE_ORDER' : "BIG_ENDIAN"})
