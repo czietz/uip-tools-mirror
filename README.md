@@ -155,11 +155,12 @@ Because **USB** is rather demanding protocol for an old systems like TOS machine
 
 In order to build **uiptool** following prerequisites are needed:
 
-- Cygwin or Linux environment
+- Cygwin, Linux, or macOS environment
 - m68k-atari-mint cross compiler (http://vincent.riviere.free.fr/soft/m68k-atari-mint)
 - vasm m68k cross compiler (http://sun.hasenbraten.de/vasm)
 - Scons
 - xxd
+- GNU coreutils (macOS only)
 
 For CSS/JS automatic minificationin release builds nodeJS version 11.9.0 is required (https://nodejs.org/en/) with the following packages installed:
 
@@ -189,6 +190,12 @@ bash#  LIBCMINI=/path/libcmini/libcmini/build/ scons -C ../uip-tools
 This cuts about 100KB of the executable size.
 
 If UPX is detected during the build then it will be used to compress the resulting in even smaller binary. If environment variable **NOUPX** is present then UPX will not be used.
+
+On macOS, use the Homebrew package manager to install GNU coreutils:
+
+```
+brew install coreutils
+```
 
 # Thanks and acknowledgments
 
