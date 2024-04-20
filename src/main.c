@@ -61,13 +61,20 @@
 #define NULL ((void *)0)
 #endif /* NULL */
 
+#define IP_BUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
+
 #define KEY_CHECK_VALUE (20)
 
 /*---------------------------------------------------------------------------*/
 
 void net_send()
 {
-  uip_split_output();
+  if (IP_BUF->proto == UIP_PROTO_TCP) {
+    /* this will (re) calculate the TCP checksum, not safe for !TCP */
+    uip_split_output();
+  } else {
+    ip_packet_output();
+  }
 }
 
 void ip_packet_output()
@@ -158,10 +165,14 @@ create_config_path(const char* app_path)
 void
 config_setup_default()
 {
+#ifdef WITHOUT_DHCP
+  config_static_ip = true;
+#else
   config_static_ip = false;
   uip_ipaddr(&config_ip, 192,168,1,90);
   uip_ipaddr(&config_netmask, 255,255,255,0);
   uip_ipaddr(&config_router, 192,168,1,254);
+#endif
 }
 
 void
@@ -229,6 +240,9 @@ read_config()
       config_setup_default ();
     }
 
+#ifdef WITHOUT_DHCP
+    static_ip_enabled = 1;
+#endif
     config_static_ip = static_ip_enabled == 1 ? true : false;
     uip_ipaddr(&config_ip, ip[0], ip[1], ip[2], ip[3]);
     uip_ipaddr(&config_netmask, mask[0], mask[1], mask[2], mask[3]);
@@ -365,10 +379,14 @@ main(int argc, char *argv[])
         uint32_t code = Cconin ();
         /* Check if F1 was pressed  */
         if(code == 0x3b0000) {
+#ifdef WITHOUT_DHCP
+          save_config();
+#else
           toggle_ip_config();
-#ifdef USB_PRINTSTATUS
+#endif
         /* Check if F2 was pressed  */
         } else if (code == 0x3c0000) {
+#ifdef USB_PRINTSTATUS
           USBETHdev_printstatus();
 #endif
         } else {
