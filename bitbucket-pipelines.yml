@@ -1,8 +1,3 @@
-# This is a sample build configuration for C++ � Make.
-# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
 image: atlassian/default-image:3
 
 # Clone full depth Git repo since version number is calculated from number of commits
@@ -10,6 +5,32 @@ clone:
   depth: full
 
 pipelines:
+  branches:
+   - step:
+      name: Building branch
+      script:
+        - echo "Building branch ${BITBUCKET_BRANCH}"
+    - step:
+      name: 'Prepare toolchain, build and upload'
+      deployment: production
+      script: # Modify the commands below to build your repository.
+        - apt-get install -y software-properties-common
+        - add-apt-repository -y ppa:vriviere/ppa
+        - apt-get update -qq
+        - apt-get install -y cross-mint-essential scons upx vim-common
+        - mkdir ../libcmini
+        - cd ../libcmini
+        # Build breaks with libcmini >= 0.52!
+        - wget -q -O - "https://github.com/freemint/libcmini/releases/download/v0.51/libcmini-0.51.tar.gz" | tar xzf -
+        - export LIBCMINI="$PWD/lib/"
+        - mkdir ../builddir
+        - cd ../builddir
+        - scons -C $BITBUCKET_CLONE_DIR
+        - TARGETDIR=`basename $BITBUCKET_CLONE_DIR`
+        - cp ./netusbee/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
+        - cp ./netusbee/$TARGETDIR/src/uip.tos ./uip-netusbee-${BITBUCKET_BRANCH}.tos
+        - cp ./usb/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
+        - cp ./usb/$TARGETDIR/src/uip.tos ./uip-usb-${BITBUCKET_BRANCH}.tos
   default:
     - step:
         name: 'Prepare toolchain, build and upload'
