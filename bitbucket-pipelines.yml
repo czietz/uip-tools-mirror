@@ -17,7 +17,7 @@ pipelines:
       script:
       - echo "Building for pull request"
    - step:
-      name: 'Prepare toolchain, build and upload'
+      name: 'Prepare toolchain and perform test build.'
       deployment: production
       script: 
         - apt-get install -y software-properties-common
@@ -44,7 +44,7 @@ pipelines:
       script:
         - echo "Building branch ${BITBUCKET_BRANCH}"
   - step:
-        name: 'Prepare toolchain, build and upload'
+        name: 'Prepare toolchain, build and upload.'
         deployment: production
         script: # Modify the commands below to build your repository.
           - apt-get install -y software-properties-common
@@ -75,7 +75,7 @@ pipelines:
       script:
         - echo "Building branch ${BITBUCKET_BRANCH}"
   - step:
-     name: 'Prepare toolchain, build and upload'
+     name: 'Prepare toolchain and perform test build.'
      deployment: production
      script: 
         - apt-get install -y software-properties-common
