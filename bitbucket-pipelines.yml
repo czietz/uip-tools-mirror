@@ -34,15 +34,15 @@ pipelines:
         - scons -C $BITBUCKET_CLONE_DIR
         - TARGETDIR=`basename $BITBUCKET_CLONE_DIR`
         - cp ./netusbee/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
-        - cp ./netusbee/$TARGETDIR/src/uip.tos ./uip-netusbee-${BITBUCKET_BRANCH}.tos
+        - cp ./netusbee/$TARGETDIR/src/uip.tos ./uip-netusbee-pr.tos
         - cp ./usb/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
-        - cp ./usb/$TARGETDIR/src/uip.tos ./uip-usb-${BITBUCKET_BRANCH}.tos
+        - cp ./usb/$TARGETDIR/src/uip.tos ./uip-usb-pr.tos
       artifacts: # Save resulting files
-          - uip-netusbee-${BITBUCKET_BRANCH}.tos
-          - uip-usb-${BITBUCKET_BRANCH}.tos
+          - uip-netusbee-pr.tos
+          - uip-usb-pr.tos
 
  branches:
-  master*/:
+  master:
   - step:
       name: Building branch
       script:
