@@ -37,6 +37,10 @@ pipelines:
         - cp ./netusbee/$TARGETDIR/src/uip.tos ./uip-netusbee-${BITBUCKET_BRANCH}.tos
         - cp ./usb/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
         - cp ./usb/$TARGETDIR/src/uip.tos ./uip-usb-${BITBUCKET_BRANCH}.tos
+      artifacts: # Save resulting files
+          - uip-netusbee-${BITBUCKET_BRANCH}.tos
+          - uip-usb-${BITBUCKET_BRANCH}.tos
+
  branches:
   master*/:
   - step:
@@ -67,8 +71,8 @@ pipelines:
           - curl -X POST --user "${BB_AUTH_STRING}" "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"./uip-netusbee-master.tos"
           - curl -X POST --user "${BB_AUTH_STRING}" "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"./uip-usb-master.tos"
         artifacts: # Save resulting files
-          - uip-netusbee-master.tos
-          - uip-usb-master.tos
+          - uip-netusbee-${BITBUCKET_BRANCH}.tos
+          - uip-usb-${BITBUCKET_BRANCH}.tos
   '**':
   - step:
       name: Building branch
@@ -95,4 +99,6 @@ pipelines:
         - cp ./netusbee/$TARGETDIR/src/uip.tos ./uip-netusbee-${BITBUCKET_BRANCH}.tos
         - cp ./usb/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
         - cp ./usb/$TARGETDIR/src/uip.tos ./uip-usb-${BITBUCKET_BRANCH}.tos
-  
+     artifacts: # Save resulting files
+          - uip-netusbee-${BITBUCKET_BRANCH}.tos
+          - uip-usb-${BITBUCKET_BRANCH}.tos
