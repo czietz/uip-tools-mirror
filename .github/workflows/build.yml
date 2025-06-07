@@ -1,0 +1,52 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        # because version number is based on number of commits
+        fetch-depth: 0
+    - name: Run original Bitbucket pipeline
+      run: |
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository -y ppa:vriviere/ppa
+        sudo apt-get update -qq
+        sudo apt-get install -y cross-mint-essential scons upx vim-common
+        BITBUCKET_CLONE_DIR=$PWD
+        mkdir ../libcmini
+        cd ../libcmini
+        # Build breaks with libcmini >= 0.52!
+        wget -q -O - "https://github.com/freemint/libcmini/releases/download/v0.51/libcmini-0.51.tar.gz" | tar xzf -
+        export LIBCMINI="$PWD/lib/"
+        mkdir ../builddir
+        cd ../builddir
+        scons -C $BITBUCKET_CLONE_DIR
+        TARGETDIR=`basename $BITBUCKET_CLONE_DIR`
+        # cp ./netusbee/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
+        cp ./netusbee/$TARGETDIR/src/uip.tos $BITBUCKET_CLONE_DIR/uip-netusbee-master.tos
+        # cp ./usb/$TARGETDIR/src/*.tos $BITBUCKET_CLONE_DIR # to treat as artifact
+        cp ./usb/$TARGETDIR/src/uip.tos $BITBUCKET_CLONE_DIR/uip-usb-master.tos
+    - name: Save binaries as build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: uip-tools
+        path: |
+          uip-*.tos
+    - name: Save binaries as release
+      uses: "czietz/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: false
+        title: "Latest snapshot build"
+        files: |
+          uip-*.tos
