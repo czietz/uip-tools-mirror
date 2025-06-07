@@ -1,4 +1,4 @@
-**THIS IS AN INOFFICIAL MIRROR OF UIP-TOOLS!** The official repository is located at https://bitbucket.org/sqward/uip-tools/src. No issues and PRs will be accepted for this mirror.
+**THIS IS AN UNOFFICIAL MIRROR OF UIP-TOOLS!** The official repository is located at https://bitbucket.org/sqward/uip-tools/src. No issues and PRs will be accepted for this mirror.
 
 
 # Uiptool Introduction
