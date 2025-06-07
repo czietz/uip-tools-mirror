@@ -1,3 +1,6 @@
+**THIS IS AN INOFFICIAL MIRROR OF UIP-TOOLS!** The official repository is located at https://bitbucket.org/sqward/uip-tools/src. No issues and PRs will be accepted for this mirror.
+
+
 # Uiptool Introduction
 
 Uip-tools brings an easy way to upload or download files to your beloved TOS machine with NetUSBee compatible network adapter **without** a need for **MiNT** or **STING** TCP/IP stacks.
